@@ -330,8 +330,8 @@ class BuiltinSensor(Sensor[torch.Tensor]):
     del model, device
     self._data = data
     sensor = mj_model.sensor(self._name)
-    start = sensor.adr[0]
-    dim = sensor.dim[0]
+    start = int(sensor.adr[0])
+    dim = int(sensor.dim[0])
     self._data_view = self._data.sensordata[:, start : start + dim]
 
   @property

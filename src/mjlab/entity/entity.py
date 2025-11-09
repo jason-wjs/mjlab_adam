@@ -352,8 +352,33 @@ class Entity:
 
       # Joint stiffness and damping.
       if self.is_actuated:
-        default_joint_stiffness = model.actuator_gainprm[:, self.indexing.ctrl_ids, 0]
-        default_joint_damping = -model.actuator_biasprm[:, self.indexing.ctrl_ids, 2]
+        ctrl_ids_list = self.indexing.ctrl_ids.cpu().tolist()
+        # Extract stiffness and damping for each control ID
+        stiffness_list = []
+        damping_list = []
+        for ctrl_id in ctrl_ids_list:
+          gain_shape = model.actuator_gainprm.shape
+          bias_shape = model.actuator_biasprm.shape
+
+          if len(gain_shape) == 3:  # 原生 MuJoCo 样式 (nworld, nact, nparam)
+            gain_i = model.actuator_gainprm[:, ctrl_id, 0]
+            bias_i = -model.actuator_biasprm[:, ctrl_id, 2]
+          elif len(gain_shape) == 2:  # MJLab / Warp 样式 (nworld, nact)
+            gain_i = model.actuator_gainprm[:, ctrl_id]
+            bias_i = -model.actuator_biasprm[:, ctrl_id]
+          else:
+            raise ValueError(f"Unexpected actuator param shape: gain={gain_shape}, bias={bias_shape}")
+          
+          if not isinstance(gain_i, torch.Tensor):
+            gain_i = torch.as_tensor(gain_i, dtype=torch.float32, device=device)
+          if not isinstance(bias_i, torch.Tensor):
+            bias_i = torch.as_tensor(bias_i, dtype=torch.float32, device=device)
+          
+          stiffness_list.append(gain_i)
+          damping_list.append(bias_i)
+
+        default_joint_stiffness = torch.stack(stiffness_list, dim=1)
+        default_joint_damping = torch.stack(damping_list, dim=1)
       else:
         default_joint_stiffness = torch.empty(
           nworld, 0, dtype=torch.float, device=device
@@ -362,11 +387,17 @@ class Entity:
 
       # Joint limits.
       joint_ids_global = [j.id for j in self._non_free_joints]
-      dof_limits = model.jnt_range[:, joint_ids_global]
+      # Extract joint limits from MuJoCo model using numpy
+      mj_jnt_ranges = np.asarray(mj_model.jnt_range).reshape(mj_model.njnt, 2)
+      joint_limits_np = mj_jnt_ranges[joint_ids_global]
+      dof_limits = torch.as_tensor(joint_limits_np, dtype=torch.float, device=device)
+      dof_limits = dof_limits.unsqueeze(0).repeat(nworld, 1, 1)
+      
       default_joint_pos_limits = dof_limits.clone()
       joint_pos_limits = default_joint_pos_limits.clone()
       joint_pos_mean = (joint_pos_limits[..., 0] + joint_pos_limits[..., 1]) / 2
       joint_pos_range = joint_pos_limits[..., 1] - joint_pos_limits[..., 0]
+
 
       # Soft limits.
       soft_limit_factor = (
@@ -658,3 +689,5 @@ class Entity:
       free_joint_q_adr=free_joint_q_adr,
       free_joint_v_adr=free_joint_v_adr,
     )
+
+

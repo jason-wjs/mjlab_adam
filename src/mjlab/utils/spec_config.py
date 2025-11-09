@@ -396,19 +396,36 @@ class ActuatorSetCfg(SpecCfg):
       if not is_joint_limited(joint):
         raise ValueError(f"Joint {joint_name} must be limited for position control")
 
+      # Always set joint physical parameters.
       joint.armature = cfg.armature
       joint.frictionloss = cfg.frictionloss
 
-      act = spec.add_actuator(
-        name=joint_name,
-        target=joint_name,
-        trntype=mujoco.mjtTrn.mjTRN_JOINT,
-        gaintype=mujoco.mjtGain.mjGAIN_FIXED,
-        biastype=mujoco.mjtBias.mjBIAS_AFFINE,
-        inheritrange=1.0,
-        forcerange=(-cfg.effort_limit, cfg.effort_limit),
-      )
+      # Reuse existing actuator when present (e.g., defined in MJCF), otherwise add.
+      existing = None
+      for a in getattr(spec, "actuators", []):
+        if a.name == joint_name:
+          existing = a
+          break
 
+      if existing is None:
+        act = spec.add_actuator(
+          name=joint_name,
+          target=joint_name,
+          trntype=mujoco.mjtTrn.mjTRN_JOINT,
+          gaintype=mujoco.mjtGain.mjGAIN_FIXED,
+          biastype=mujoco.mjtBias.mjBIAS_AFFINE,
+          inheritrange=1.0,
+          forcerange=(-cfg.effort_limit, cfg.effort_limit),
+        )
+      else:
+        act = existing
+        act.trntype = mujoco.mjtTrn.mjTRN_JOINT
+        act.gaintype = mujoco.mjtGain.mjGAIN_FIXED
+        act.biastype = mujoco.mjtBias.mjBIAS_AFFINE
+        act.inheritrange = 1.0
+        act.forcerange = (-cfg.effort_limit, cfg.effort_limit)
+
+      # Set PD parameters.
       act.gainprm[0] = cfg.stiffness
       act.biasprm[1] = -cfg.stiffness
       act.biasprm[2] = -cfg.damping

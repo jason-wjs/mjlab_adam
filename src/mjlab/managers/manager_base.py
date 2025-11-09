@@ -46,7 +46,7 @@ class ManagerTermBase:
 
 class ManagerBase(abc.ABC):
   """Base class for all managers."""
-
+  
   def __init__(self, env: ManagerBasedEnv):
     self._env = env
 
