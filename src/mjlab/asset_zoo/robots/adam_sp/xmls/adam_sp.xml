@@ -5,8 +5,9 @@
   <default>
     <!-- <joint frictionloss="1"/> -->
     <joint damping="0.001" armature="0.01" frictionloss="0.1"/>
-    <!-- Global default: disable collisions for all geoms unless explicitly overridden. -->
-    <geom solimp="0.95 0.95 0.001" solref="0.005 1" contype="0" conaffinity="0"/>
+    <!-- 刚性地板 -->
+    <geom solimp="0.95 0.95 0.001" solref="0.005 1"/> 
+    
   </default>
   <asset>
     <mesh name="pelvis" file="pelvis.STL" />
@@ -15,13 +16,13 @@
     <mesh name="thighLeft" file="thighLeft.STL" />
     <mesh name="shinLeft" file="shinLeft.STL" />
     <mesh name="anklePitchLeft" file="anklePitchLeft.STL" />
-    <mesh name="toe_left" file="toeLeft.STL" />
+    <mesh name="toeLeft" file="toeLeft.STL" />
     <mesh name="hipPitchRight" file="hipPitchRight.STL" />
     <mesh name="hipRollRight" file="hipRollRight.STL" />
     <mesh name="thighRight" file="thighRight.STL" />
     <mesh name="shinRight" file="shinRight.STL" />
     <mesh name="anklePitchRight" file="anklePitchRight.STL" />
-    <mesh name="toe_right" file="toeRight.STL" />
+    <mesh name="toeRight" file="toeRight.STL" />
     <mesh name="waistRoll" file="waistRoll.STL" />
     <mesh name="waistPitch" file="waistPitch.STL" />
     <mesh name="torso" file="torso.STL" />
@@ -95,16 +96,12 @@
                 <joint name="anklePitch_Left" pos="0 0 0" axis="0 1 0" range="-1 0.35" actuatorfrcrange="-40 40" />
                 <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="1 1 1 1" mesh="anklePitchLeft" />
                 <!-- <geom type="mesh" rgba="1 1 1 1" mesh="anklePitchLeft" /> -->
-                <body name="toe_left">
+                <body name="toeLeft">
                   <inertial pos="0.0374997 -4.016e-05 -0.0419674" quat="0.00341207 0.66841 -0.00284521 0.74378" mass="0.634796" diaginertia="0.0023347 0.00226908 0.000434692" />
                   <joint name="ankleRoll_Left" pos="0 0 0" axis="1 0 0" range="-0.3491 0.3491" actuatorfrcrange="-12 12" />
-                  <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.752941 0.752941 0.752941 1" mesh="toe_left" />
-                  <!-- <geom type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="toe_left" /> -->
-                  <!-- Feet-only collision: enable collisions on toe box with full friction (condim=3). -->
-                  <geom name="toe_left" type="box" size="0.12 0.05 0.015"
-                        pos="0.047 0.0 -0.05" quat="0 0 0 1"
-                        rgba="1 0 0 0"
-                        contype="1" conaffinity="1" condim="3" />
+                  <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.752941 0.752941 0.752941 1" mesh="toeLeft" />
+                  <!-- <geom type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="toeLeft" /> -->
+                  <geom name="toe_left" size="0.12 0.05 0.015" pos="0.047 0.0 -0.05" quat="0 0 0 1" type="box" rgba="1 0 0 0" />
                 </body>
               </body>
             </body>
@@ -136,16 +133,12 @@
                 <joint name="anklePitch_Right" pos="0 0 0" axis="0 1 0" range="-1 0.35" actuatorfrcrange="-40 40" />
                 <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="1 1 1 1" mesh="anklePitchRight" />
                 <!-- <geom type="mesh" rgba="1 1 1 1" mesh="anklePitchRight" /> -->
-                <body name="toe_right">
+                <body name="toeRight">
                   <inertial pos="0.0375023 4.002e-05 -0.0419671" quat="-0.00346801 0.668408 0.00279542 0.743782" mass="0.634808" diaginertia="0.0023347 0.00226908 0.00043472" />
                   <joint name="ankleRoll_Right" pos="0 0 0" axis="1 0 0" range="-0.3491 0.3491" actuatorfrcrange="-12 12" />
-                  <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.752941 0.752941 0.752941 1" mesh="toe_right" />
-                  <!-- <geom type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="toe_right" /> -->
-                  <!-- Feet-only collision: enable collisions on toe box with full friction (condim=3). -->
-                  <geom name="toe_right" type="box" size="0.12 0.05 0.015"
-                        pos="0.047 0.0 -0.05" quat="0 0 0 1"
-                        rgba="1 0 0 0"
-                        contype="1" conaffinity="1" condim="3" />
+                  <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.752941 0.752941 0.752941 1" mesh="toeRight" />
+                  <!-- <geom type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="toeRight" /> -->
+                  <geom name="toe_right" size="0.12 0.05 0.015" pos="0.047 0.0 -0.05" quat="0 0 0 1" type="box" rgba="1 0 0 0" />
                 </body>
               </body>
             </body>
@@ -398,7 +391,7 @@
           </body>
         </body>
       </body>
-      <!-- <site name="imu" pos="0 0 0" /> -->
+      <site name="imu" pos="0 0 0" size="0.01" />
     </body>
   </worldbody>
   <actuator>
@@ -616,6 +609,9 @@
     <jointactuatorfrc name="force_R_ring_DIP_joint" joint="R_ring_DIP_joint" />
     <jointactuatorfrc name="force_R_pinky_MCP_joint" joint="R_pinky_MCP_joint" />
     <jointactuatorfrc name="force_R_pinky_DIP_joint" joint="R_pinky_DIP_joint" /> -->
+    <velocimeter name="imu_lin_vel" site="imu"/>
+    <gyro name="imu_ang_vel" site="imu"/>
+    <accelerometer name="imu_lin_acc" site="imu"/>
   </sensor>
 
   <!-- setup scene -->

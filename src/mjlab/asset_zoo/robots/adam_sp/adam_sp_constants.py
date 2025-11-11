@@ -225,12 +225,16 @@ ADAM_SP_ARTICULATION = EntityArticulationInfoCfg(
   soft_joint_pos_limit_factor=0.9,
 )
 
-ADAM_SP_ROBOT_CFG = EntityCfg(
+
+
+def get_adam_sp_robot_cfg() -> EntityCfg:
+  return EntityCfg(
   init_state=ADAM_SP_INIT_STATE,
   collisions=(FOOT_COLLISION,),
   spec_fn=get_spec,
   articulation=ADAM_SP_ARTICULATION,
 )
+
 
 ADAM_SP_ACTION_SCALE: dict[str, float] = {}
 for actuator_cfg in ADAM_SP_ARTICULATION.actuators:
