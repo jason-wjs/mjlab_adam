@@ -55,12 +55,12 @@ VIEWER_CONFIG = ViewerConfig(
 
 SIM_CFG = SimulationCfg(
   nconmax=35,
-  njmax=250,
+  njmax=120,
   mujoco=MujocoCfg(
     timestep=0.005,
     iterations=10,
     ls_iterations=20,
-  ),
+  )
 )
 
 

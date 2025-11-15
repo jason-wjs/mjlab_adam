@@ -321,7 +321,6 @@ class CameraCfg(SpecCfg):
     if self.target is not None:
       camera.targetbody = self.target
 
-
 @dataclass
 class ActuatorCfg:
   """Configuration for PD-controlled actuators applied to joints.

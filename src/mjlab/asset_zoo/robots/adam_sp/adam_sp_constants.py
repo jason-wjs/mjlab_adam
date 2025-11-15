@@ -167,7 +167,7 @@ ELBOW_ACTUATORS = ActuatorCfg(
 ##
 
 ADAM_SP_INIT_STATE = EntityCfg.InitialStateCfg(
-  pos=(0.0, 0.0, 0.95),
+  pos=(0.0, 0.0, 0.9),
   joint_pos={
     "hipPitch_Left": -0.334,
     "hipRoll_Left": 0.045,
@@ -254,6 +254,6 @@ if __name__ == "__main__":
 
   from mjlab.entity.entity import Entity
 
-  entity = Entity(ADAM_SP_ROBOT_CFG)
+  entity = Entity(get_adam_sp_robot_cfg())
   viewer.launch(entity.spec.compile())
 

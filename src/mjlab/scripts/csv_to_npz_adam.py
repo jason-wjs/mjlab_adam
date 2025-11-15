@@ -8,10 +8,9 @@ from tqdm import tqdm
 from mjlab.entity import Entity
 from mjlab.scene import Scene
 from mjlab.sim.sim import Simulation, SimulationCfg
-from mjlab.tasks.tracking.config.adam_sp.flat_env_cfg import AdamSpFlatEnvCfg
+from mjlab.tasks.tracking.config.adam_sp.env_cfgs import ADAM_SP_FLAT_TRACKING_ENV_CFG
 from mjlab.third_party.isaaclab.isaaclab.utils.math import (
   axis_angle_from_quat,
-  quat_apply_inverse,
   quat_conjugate,
   quat_mul,
   quat_slerp,
@@ -55,15 +54,19 @@ class MotionLoader:
         )
       )
     motion = motion.to(torch.float32).to(self.device)
-    # motion[:, 2] -= 0.05
+
+    # Normalize root height to prevent floating issues
+    # Use the first frame as reference to ensure consistent ground contact
+    # This addresses the height stacking problem where CSV absolute height
+    # conflicts with MJLab's expected height reference
+    first_frame_height = motion[0, 2].item()
+    motion[:, 2] -= first_frame_height
+
     self.motion_base_poss_input = motion[:, :3]
     self.motion_base_rots_input = motion[:, 3:7]
     self.motion_base_rots_input = self.motion_base_rots_input[
       :, [3, 0, 1, 2]
     ]  # convert to wxyz
-    # Remaining columns are DoF positions as provided by the CSV.
-    # For adam_sp_pick_up_box.csv, wrists are fixed; the CSV contains 23 joints
-    # that must match the model's articulated joints exactly.
     self.motion_dof_poss_input = motion[:, 7:]
 
     self.input_frames = motion.shape[0]
@@ -206,17 +209,6 @@ def run_sim(
   robot: Entity = scene["robot"]
   robot_joint_indexes = robot.find_joints(joint_names, preserve_order=True)[0]
 
-  # Validate CSV DoF count matches the model's expected joint count
-  expected_dofs = len(robot_joint_indexes)
-  actual_dofs = motion.motion_dof_poss_input.shape[1]
-  if actual_dofs != expected_dofs:
-    raise ValueError(
-      "CSV DoF column count mismatch: "
-      f"got {actual_dofs}, expected {expected_dofs}. "
-      "Ensure the CSV columns (after base pos[3] + rot[4]) match the model joints: "
-      f"{joint_names}"
-    )
-
   log: dict[str, Any] = {
     "fps": [output_fps],
     "joint_pos": [],
@@ -263,7 +255,7 @@ def run_sim(
     root_states[:, :2] += scene.env_origins[:, :2]
     root_states[:, 3:7] = motion_base_rot
     root_states[:, 7:10] = motion_base_lin_vel
-    root_states[:, 10:] = quat_apply_inverse(motion_base_rot, motion_base_ang_vel)
+    root_states[:, 10:] = motion_base_ang_vel
     robot.write_root_state_to_sim(root_states)
 
     joint_pos = robot.data.default_joint_pos.clone()
@@ -319,14 +311,14 @@ def run_sim(
         ):
           log[k] = np.stack(log[k], axis=0)
 
-        print(f"Saving to /tmp/motion.npz...")
-        np.savez(f"/tmp/motion.npz", **log)  # type: ignore[arg-type]
+        print("Saving to /tmp/motion.npz...")
+        np.savez("/tmp/motion.npz", **log)  # type: ignore[arg-type]
 
         print("Uploading to Weights & Biases...")
         import wandb
 
         COLLECTION = output_name
-        run = wandb.init(project="csv_to_npz", name=COLLECTION)
+        run = wandb.init(project="csv_to_npz_adam", name=COLLECTION)
         print(f"[INFO]: Logging motion to wandb: {COLLECTION}")
         REGISTRY = "motions"
         logged_artifact = run.log_artifact(
@@ -374,11 +366,7 @@ def main(
   sim_cfg = SimulationCfg()
   sim_cfg.mujoco.timestep = 1.0 / output_fps
 
-  env_cfg = AdamSpFlatEnvCfg()
-  # The actuators are likely already defined in the robot's XML file.
-  # Setting articulation to None prevents adding them again.
-  env_cfg.scene.entities["robot"].articulation = None
-  scene = Scene(env_cfg.scene, device=device)
+  scene = Scene(ADAM_SP_FLAT_TRACKING_ENV_CFG.scene, device=device)
   model = scene.compile()
 
   sim = Simulation(num_envs=1, cfg=sim_cfg, model=model, device=device)
